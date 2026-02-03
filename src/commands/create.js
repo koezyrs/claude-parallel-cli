@@ -2,27 +2,27 @@ import chalk from 'chalk';
 import ora from 'ora';
 import fs from 'fs';
 import path from 'path';
-import { loadConfig, getFeaturesDir, findProjectRoot } from '../utils/config.js';
+import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
 import { createWorktree, branchExists } from '../utils/git.js';
 import { copyClaudeConfig } from '../utils/claude.js';
 
 export async function createCommand(features) {
-  const projectRoot = findProjectRoot();
+  const gitRoot = findGitRoot();
 
-  if (!projectRoot) {
+  if (!gitRoot) {
     console.error(chalk.red('Error: Not in a git repository'));
     process.exit(1);
   }
 
   let config;
   try {
-    config = loadConfig(projectRoot);
+    config = loadConfig();
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
   }
 
-  const featuresDir = getFeaturesDir(config, projectRoot);
+  const featuresDir = getFeaturesDir(config);
 
   // Ensure features directory exists
   if (!fs.existsSync(featuresDir)) {
@@ -38,7 +38,7 @@ export async function createCommand(features) {
 
     try {
       // Check if branch already exists
-      if (branchExists(feature, projectRoot)) {
+      if (branchExists(feature, gitRoot)) {
         spinner.fail(`Branch '${feature}' already exists`);
         results.push({ feature, success: false, error: 'Branch already exists' });
         continue;
@@ -52,11 +52,11 @@ export async function createCommand(features) {
       }
 
       // Create worktree
-      createWorktree(worktreePath, feature, config.mainBranch, projectRoot);
+      createWorktree(worktreePath, feature, config.mainBranch, gitRoot);
 
-      // Copy .claude config if enabled
-      if (config.copyClaudeConfig) {
-        const copied = copyClaudeConfig(projectRoot, worktreePath);
+      // Copy .claude config if enabled (from config directory)
+      if (config.copyClaudeConfig && config._configDir) {
+        const copied = copyClaudeConfig(config._configDir, worktreePath);
         if (copied) {
           spinner.text = `Creating worktree for ${chalk.cyan(feature)} (copied .claude config)`;
         }

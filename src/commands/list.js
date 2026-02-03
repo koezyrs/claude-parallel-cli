@@ -1,25 +1,25 @@
 import chalk from 'chalk';
-import { loadConfig, getFeaturesDir, findProjectRoot } from '../utils/config.js';
-import { getWorktrees, getFeatureWorktrees } from '../utils/git.js';
+import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
+import { getFeatureWorktrees } from '../utils/git.js';
 
 export async function listCommand() {
-  const projectRoot = findProjectRoot();
+  const gitRoot = findGitRoot();
 
-  if (!projectRoot) {
+  if (!gitRoot) {
     console.error(chalk.red('Error: Not in a git repository'));
     process.exit(1);
   }
 
   let config;
   try {
-    config = loadConfig(projectRoot);
+    config = loadConfig();
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
   }
 
-  const featuresDir = getFeaturesDir(config, projectRoot);
-  const featureWorktrees = getFeatureWorktrees(featuresDir, projectRoot);
+  const featuresDir = getFeaturesDir(config);
+  const featureWorktrees = getFeatureWorktrees(featuresDir, gitRoot);
 
   if (featureWorktrees.length === 0) {
     console.log(chalk.yellow('No feature worktrees found.'));

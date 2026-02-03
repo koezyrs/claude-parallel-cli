@@ -3,9 +3,16 @@ import path from 'path';
 import { CONFIG_FILENAME, DEFAULT_CONFIG } from '../constants.js';
 
 /**
+ * Get the current working directory
+ */
+export function getCwd() {
+  return process.cwd();
+}
+
+/**
  * Find the project root by looking for .git directory
  */
-export function findProjectRoot(startDir = process.cwd()) {
+export function findGitRoot(startDir = process.cwd()) {
   let dir = startDir;
   while (dir !== path.parse(dir).root) {
     if (fs.existsSync(path.join(dir, '.git'))) {
@@ -17,55 +24,68 @@ export function findProjectRoot(startDir = process.cwd()) {
 }
 
 /**
+ * Find config file by traversing up from current directory
+ */
+export function findConfigDir(startDir = process.cwd()) {
+  let dir = startDir;
+  while (dir !== path.parse(dir).root) {
+    if (fs.existsSync(path.join(dir, CONFIG_FILENAME))) {
+      return dir;
+    }
+    dir = path.dirname(dir);
+  }
+  return null;
+}
+
+/**
  * Get the config file path
  */
-export function getConfigPath(projectRoot = null) {
-  const root = projectRoot || findProjectRoot();
-  if (!root) {
-    throw new Error('Not in a git repository');
+export function getConfigPath(configDir = null) {
+  const dir = configDir || findConfigDir();
+  if (!dir) {
+    throw new Error(`Config file not found. Run 'cpw init' first.`);
   }
-  return path.join(root, CONFIG_FILENAME);
+  return path.join(dir, CONFIG_FILENAME);
 }
 
 /**
  * Check if config file exists
  */
-export function configExists(projectRoot = null) {
-  try {
-    const configPath = getConfigPath(projectRoot);
-    return fs.existsSync(configPath);
-  } catch {
-    return false;
-  }
+export function configExists(startDir = process.cwd()) {
+  return findConfigDir(startDir) !== null;
 }
 
 /**
  * Load config from file
  */
-export function loadConfig(projectRoot = null) {
-  const configPath = getConfigPath(projectRoot);
+export function loadConfig(startDir = process.cwd()) {
+  const configDir = findConfigDir(startDir);
 
-  if (!fs.existsSync(configPath)) {
+  if (!configDir) {
     throw new Error(`Config file not found. Run 'cpw init' first.`);
   }
 
+  const configPath = path.join(configDir, CONFIG_FILENAME);
   const content = fs.readFileSync(configPath, 'utf-8');
   const config = JSON.parse(content);
 
-  return { ...DEFAULT_CONFIG, ...config };
+  // Return config with the directory it was found in
+  return {
+    ...DEFAULT_CONFIG,
+    ...config,
+    _configDir: configDir  // Internal: where the config was found
+  };
 }
 
 /**
- * Save config to file
+ * Save config to file in the current working directory
  */
-export function saveConfig(config, projectRoot = null) {
-  const root = projectRoot || findProjectRoot();
-  if (!root) {
-    throw new Error('Not in a git repository');
-  }
+export function saveConfig(config, targetDir = process.cwd()) {
+  const configPath = path.join(targetDir, CONFIG_FILENAME);
 
-  const configPath = path.join(root, CONFIG_FILENAME);
-  const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+  // Remove internal properties before saving
+  const { _configDir, ...configToSave } = config;
+  const mergedConfig = { ...DEFAULT_CONFIG, ...configToSave };
 
   fs.writeFileSync(configPath, JSON.stringify(mergedConfig, null, 2) + '\n');
 
@@ -75,11 +95,10 @@ export function saveConfig(config, projectRoot = null) {
 /**
  * Get the absolute path to the features directory
  */
-export function getFeaturesDir(config, projectRoot = null) {
-  const root = projectRoot || findProjectRoot();
-  if (!root) {
-    throw new Error('Not in a git repository');
-  }
-
-  return path.resolve(root, config.featuresDir);
+export function getFeaturesDir(config) {
+  const baseDir = config._configDir || process.cwd();
+  return path.resolve(baseDir, config.featuresDir);
 }
+
+// Keep backward compatibility alias
+export const findProjectRoot = findGitRoot;

@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import ora from 'ora';
-import { loadConfig, getFeaturesDir, findProjectRoot } from '../utils/config.js';
+import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
 import {
   getFeatureWorktrees,
   getCurrentBranch,
@@ -14,16 +14,16 @@ import {
 } from '../utils/git.js';
 
 export async function reviewCommand(features, options) {
-  const projectRoot = findProjectRoot();
+  const gitRoot = findGitRoot();
 
-  if (!projectRoot) {
+  if (!gitRoot) {
     console.error(chalk.red('Error: Not in a git repository'));
     process.exit(1);
   }
 
   let config;
   try {
-    config = loadConfig(projectRoot);
+    config = loadConfig();
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
@@ -31,11 +31,11 @@ export async function reviewCommand(features, options) {
 
   // Handle --back option
   if (options.back) {
-    return returnToMain(projectRoot, config);
+    return returnToMain(gitRoot, config);
   }
 
-  const featuresDir = getFeaturesDir(config, projectRoot);
-  const featureWorktrees = getFeatureWorktrees(featuresDir, projectRoot);
+  const featuresDir = getFeaturesDir(config);
+  const featureWorktrees = getFeatureWorktrees(featuresDir, gitRoot);
 
   if (featureWorktrees.length === 0) {
     console.log(chalk.yellow('No feature worktrees found.'));
@@ -58,7 +58,7 @@ export async function reviewCommand(features, options) {
 
   // Check for valid feature branches
   const validFeatures = featuresToReview.filter(feature => {
-    const exists = branchExists(feature, projectRoot);
+    const exists = branchExists(feature, gitRoot);
     if (!exists) {
       console.log(chalk.yellow(`Branch '${feature}' does not exist, skipping.`));
     }
@@ -78,12 +78,12 @@ export async function reviewCommand(features, options) {
 
     try {
       // Create temp branch pointing to the feature branch
-      checkoutNewBranch(tempBranch, feature, projectRoot);
+      checkoutNewBranch(tempBranch, feature, gitRoot);
       spinner.succeed(`Checked out ${chalk.cyan(tempBranch)}`);
 
       // Show summary info
-      const commitCount = getCommitCount(config.mainBranch, feature, projectRoot);
-      const changedFiles = getChangedFiles(config.mainBranch, feature, projectRoot);
+      const commitCount = getCommitCount(config.mainBranch, feature, gitRoot);
+      const changedFiles = getChangedFiles(config.mainBranch, feature, gitRoot);
 
       console.log(chalk.dim(`  Commits ahead of ${config.mainBranch}: ${commitCount}`));
       console.log(chalk.dim(`  Changed files: ${changedFiles.length}`));
@@ -98,7 +98,7 @@ export async function reviewCommand(features, options) {
 
       // Show commit log
       if (commitCount > 0) {
-        const log = getShortLog(config.mainBranch, feature, projectRoot);
+        const log = getShortLog(config.mainBranch, feature, gitRoot);
         if (log) {
           console.log(chalk.dim('  Recent commits:'));
           log.split('\n').slice(0, 5).forEach(line => {
@@ -118,28 +118,26 @@ export async function reviewCommand(features, options) {
   console.log(chalk.dim('  cpw merge <feature>  # Merge a feature to main'));
 }
 
-async function returnToMain(projectRoot, config) {
-  const currentBranch = getCurrentBranch(projectRoot);
+async function returnToMain(gitRoot, config) {
+  const currentBranch = getCurrentBranch(gitRoot);
   const spinner = ora(`Returning to ${chalk.cyan(config.mainBranch)}`).start();
 
   try {
     // Checkout main branch
-    checkout(config.mainBranch, projectRoot);
+    checkout(config.mainBranch, gitRoot);
     spinner.succeed(`Checked out ${chalk.cyan(config.mainBranch)}`);
 
     // Delete temp branches
     if (currentBranch.startsWith('temp/')) {
       const tempSpinner = ora(`Deleting temp branch ${chalk.cyan(currentBranch)}`).start();
       try {
-        deleteBranch(currentBranch, true, projectRoot);
+        deleteBranch(currentBranch, true, gitRoot);
         tempSpinner.succeed(`Deleted ${chalk.cyan(currentBranch)}`);
       } catch (error) {
         tempSpinner.warn(`Could not delete ${currentBranch}: ${error.message}`);
       }
     }
 
-    // Find and delete other temp branches
-    // This is a simple approach - could be improved to track created temp branches
     console.log(chalk.green('\nReturned to main branch.'));
   } catch (error) {
     spinner.fail(`Failed to return to main: ${error.message}`);

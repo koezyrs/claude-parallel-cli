@@ -1,17 +1,22 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { configExists, saveConfig, findProjectRoot } from '../utils/config.js';
-import { DEFAULT_CONFIG, TERMINAL_OPTIONS } from '../constants.js';
+import fs from 'fs';
+import path from 'path';
+import { saveConfig, findGitRoot, getCwd } from '../utils/config.js';
+import { DEFAULT_CONFIG, TERMINAL_OPTIONS, CONFIG_FILENAME } from '../constants.js';
 
 export async function initCommand() {
-  const projectRoot = findProjectRoot();
+  const cwd = getCwd();
+  const gitRoot = findGitRoot();
 
-  if (!projectRoot) {
+  if (!gitRoot) {
     console.error(chalk.red('Error: Not in a git repository'));
     process.exit(1);
   }
 
-  if (configExists(projectRoot)) {
+  const configPath = path.join(cwd, CONFIG_FILENAME);
+
+  if (fs.existsSync(configPath)) {
     const { overwrite } = await inquirer.prompt([
       {
         type: 'confirm',
@@ -31,7 +36,7 @@ export async function initCommand() {
     {
       type: 'input',
       name: 'featuresDir',
-      message: 'Directory for feature worktrees (relative to project):',
+      message: 'Directory for feature worktrees (relative to this folder):',
       default: DEFAULT_CONFIG.featuresDir
     },
     {
@@ -55,9 +60,9 @@ export async function initCommand() {
     }
   ]);
 
-  const configPath = saveConfig(answers, projectRoot);
+  const savedPath = saveConfig(answers, cwd);
 
-  console.log(chalk.green(`\nConfig file created: ${configPath}`));
+  console.log(chalk.green(`\nConfig file created: ${savedPath}`));
   console.log(chalk.dim('\nConfiguration:'));
   console.log(chalk.dim(`  Features directory: ${answers.featuresDir}`));
   console.log(chalk.dim(`  Main branch: ${answers.mainBranch}`));

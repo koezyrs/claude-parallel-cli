@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { loadConfig, getFeaturesDir, findProjectRoot } from '../utils/config.js';
+import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
 import {
   getFeatureWorktrees,
   getCommitCount,
@@ -9,32 +9,32 @@ import {
 } from '../utils/git.js';
 
 export async function statusCommand() {
-  const projectRoot = findProjectRoot();
+  const gitRoot = findGitRoot();
 
-  if (!projectRoot) {
+  if (!gitRoot) {
     console.error(chalk.red('Error: Not in a git repository'));
     process.exit(1);
   }
 
   let config;
   try {
-    config = loadConfig(projectRoot);
+    config = loadConfig();
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
   }
 
   // Show main worktree status
-  const mainBranch = getCurrentBranch(projectRoot);
-  const mainHasChanges = hasUncommittedChanges(projectRoot);
+  const mainBranch = getCurrentBranch(gitRoot);
+  const mainHasChanges = hasUncommittedChanges(gitRoot);
 
   console.log(chalk.bold('Main Worktree:'));
   console.log(`  Branch: ${chalk.cyan(mainBranch)}`);
   console.log(`  Status: ${mainHasChanges ? chalk.yellow('uncommitted changes') : chalk.green('clean')}`);
   console.log('');
 
-  const featuresDir = getFeaturesDir(config, projectRoot);
-  const featureWorktrees = getFeatureWorktrees(featuresDir, projectRoot);
+  const featuresDir = getFeaturesDir(config);
+  const featureWorktrees = getFeatureWorktrees(featuresDir, gitRoot);
 
   if (featureWorktrees.length === 0) {
     console.log(chalk.yellow('No feature worktrees found.'));
@@ -53,8 +53,8 @@ export async function statusCommand() {
     let changedFiles = [];
 
     if (wt.branch) {
-      commitCount = getCommitCount(config.mainBranch, wt.branch, projectRoot);
-      changedFiles = getChangedFiles(config.mainBranch, wt.branch, projectRoot);
+      commitCount = getCommitCount(config.mainBranch, wt.branch, gitRoot);
+      changedFiles = getChangedFiles(config.mainBranch, wt.branch, gitRoot);
     }
 
     // Status indicator
@@ -88,7 +88,7 @@ export async function statusCommand() {
 
   // Show helpful commands
   const worktreesWithChanges = featureWorktrees.filter(wt => {
-    const commitCount = wt.branch ? getCommitCount(config.mainBranch, wt.branch, projectRoot) : 0;
+    const commitCount = wt.branch ? getCommitCount(config.mainBranch, wt.branch, gitRoot) : 0;
     return commitCount > 0;
   });
 

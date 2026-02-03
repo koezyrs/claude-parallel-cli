@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
 import fs from 'fs';
-import { loadConfig, getFeaturesDir, findProjectRoot } from '../utils/config.js';
+import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
 import {
   getFeatureWorktrees,
   removeWorktree,
@@ -11,23 +11,23 @@ import {
 } from '../utils/git.js';
 
 export async function cleanupCommand(features, options) {
-  const projectRoot = findProjectRoot();
+  const gitRoot = findGitRoot();
 
-  if (!projectRoot) {
+  if (!gitRoot) {
     console.error(chalk.red('Error: Not in a git repository'));
     process.exit(1);
   }
 
   let config;
   try {
-    config = loadConfig(projectRoot);
+    config = loadConfig();
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
   }
 
-  const featuresDir = getFeaturesDir(config, projectRoot);
-  const featureWorktrees = getFeatureWorktrees(featuresDir, projectRoot);
+  const featuresDir = getFeaturesDir(config);
+  const featureWorktrees = getFeatureWorktrees(featuresDir, gitRoot);
 
   if (featureWorktrees.length === 0) {
     console.log(chalk.yellow('No feature worktrees found.'));
@@ -83,14 +83,14 @@ export async function cleanupCommand(features, options) {
 
     try {
       // Remove worktree
-      removeWorktree(wt.path, true, projectRoot);
+      removeWorktree(wt.path, true, gitRoot);
       spinner.succeed(`Removed worktree ${chalk.cyan(wt.branch)}`);
 
       // Delete branch if requested
       if (deleteBranches && wt.branch) {
         const branchSpinner = ora(`Deleting branch ${chalk.cyan(wt.branch)}`).start();
         try {
-          deleteBranch(wt.branch, true, projectRoot);
+          deleteBranch(wt.branch, true, gitRoot);
           branchSpinner.succeed(`Deleted branch ${chalk.cyan(wt.branch)}`);
         } catch (error) {
           branchSpinner.warn(`Could not delete branch ${wt.branch}: ${error.message}`);
@@ -105,7 +105,7 @@ export async function cleanupCommand(features, options) {
   }
 
   // Prune worktrees
-  pruneWorktrees(projectRoot);
+  pruneWorktrees(gitRoot);
 
   // Clean up empty features directory
   if (options.all) {
