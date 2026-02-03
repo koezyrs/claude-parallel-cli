@@ -81,8 +81,8 @@ function openWindowsTerminal(workingDir, command, preference) {
   if (preference === 'auto' || preference === 'tabby') {
     const tabbyPath = getTabbyPath();
     if (tabbyPath) {
-      // Use Tabby's run command with cmd /c to run claude in the right directory
-      const cmdScript = `cmd /c "cd /d ${workingDir} && claude"`;
+      // Use Tabby's run command with cmd /k to keep terminal open
+      const cmdScript = `cmd /k "cd /d ${workingDir} && claude"`;
       const proc = spawn(tabbyPath, ['run', cmdScript], {
         detached: true,
         stdio: 'ignore'
