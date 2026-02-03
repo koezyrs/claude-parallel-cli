@@ -1,5 +1,7 @@
 import { spawn, exec, execSync } from 'child_process';
 import os from 'os';
+import path from 'path';
+import fs from 'fs';
 
 /**
  * Check if a command exists in PATH
@@ -12,6 +14,36 @@ function commandExists(command) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Get Tabby executable path (Windows)
+ */
+function getTabbyPath() {
+  // Check if tabby is in PATH
+  if (commandExists('tabby')) {
+    return 'tabby';
+  }
+
+  // Check common installation paths
+  const appData = process.env.APPDATA || '';
+  const localAppData = process.env.LOCALAPPDATA || '';
+
+  const commonPaths = [
+    path.join(localAppData, 'Programs', 'tabby', 'Tabby.exe'),
+    path.join(localAppData, 'Programs', 'Tabby', 'Tabby.exe'),
+    path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Tabby.lnk'),
+    'C:\\Program Files\\Tabby\\Tabby.exe',
+    'C:\\Program Files (x86)\\Tabby\\Tabby.exe'
+  ];
+
+  for (const p of commonPaths) {
+    if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -46,14 +78,17 @@ function openWindowsTerminal(workingDir, command, preference) {
   }
 
   // Tabby
-  if ((preference === 'auto' || preference === 'tabby') && commandExists('tabby')) {
-    const proc = spawn('tabby', ['--directory', workingDir, '--', 'cmd', '/k', command], {
-      detached: true,
-      stdio: 'ignore',
-      shell: true
-    });
-    proc.unref();
-    return { type: 'tabby', success: true };
+  if (preference === 'auto' || preference === 'tabby') {
+    const tabbyPath = getTabbyPath();
+    if (tabbyPath) {
+      const proc = spawn(tabbyPath, ['--directory', workingDir, '--', 'cmd', '/k', command], {
+        detached: true,
+        stdio: 'ignore',
+        shell: true
+      });
+      proc.unref();
+      return { type: 'tabby', success: true };
+    }
   }
 
   // PowerShell
