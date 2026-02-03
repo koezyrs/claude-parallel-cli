@@ -81,9 +81,9 @@ function openWindowsTerminal(workingDir, command, preference) {
   if (preference === 'auto' || preference === 'tabby') {
     const tabbyPath = getTabbyPath();
     if (tabbyPath) {
-      // Use Tabby with cmd /c to run the command
+      // Use Tabby's run command with cmd /c to run claude in the right directory
       const cmdScript = `cmd /c "cd /d ${workingDir} && claude"`;
-      const proc = spawn(tabbyPath, ['--new-tab', cmdScript], {
+      const proc = spawn(tabbyPath, ['run', cmdScript], {
         detached: true,
         stdio: 'ignore'
       });
