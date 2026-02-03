@@ -1,0 +1,33 @@
+{
+  "name": "claude-parallel-cli",
+  "version": "1.0.0",
+  "description": "CLI tool to automate parallel Claude Code workflows using git worktrees",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "cpw": "./bin/cpw.js",
+    "claude-parallel": "./bin/cpw.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "claude",
+    "cli",
+    "git",
+    "worktree",
+    "parallel",
+    "workflow"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "inquirer": "^9.2.0",
+    "ora": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
