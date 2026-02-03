@@ -15,7 +15,7 @@ npm install -g claude-parallel-cli
 Or clone and link locally:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/claude-parallel-cli.git
+git clone https://github.com/koezyrs/claude-parallel-cli.git
 cd claude-parallel-cli
 npm install
 npm link
