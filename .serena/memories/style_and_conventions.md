@@ -1,0 +1,6 @@
+- Use ES Modules only (`import`/`export`) and `.js` files.
+- Style: 2-space indentation, semicolons, single quotes.
+- Keep functions small/focused.
+- Command files named by action (e.g. `create.js`), exported handler names as `<name>Command`.
+- Utility names are verb-first (e.g. `loadConfig`, `createWorktree`).
+- Prefer explicit CLI-facing error messages.

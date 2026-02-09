@@ -2,19 +2,27 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * Copy .claude directory from source to destination
+ * Copy an agent config directory (e.g. .claude, .codex) from source to destination
  */
-export function copyClaudeConfig(sourceDir, destDir) {
-  const claudeDir = path.join(sourceDir, '.claude');
+export function copyAgentConfig(sourceDir, destDir, folderName) {
+  const sourceConfigDir = path.join(sourceDir, folderName);
 
-  if (!fs.existsSync(claudeDir)) {
+  if (!fs.existsSync(sourceConfigDir)) {
     return false;
   }
 
-  const destClaudeDir = path.join(destDir, '.claude');
-  copyDirRecursive(claudeDir, destClaudeDir);
+  const destinationConfigDir = path.join(destDir, folderName);
+  copyDirRecursive(sourceConfigDir, destinationConfigDir);
 
   return true;
+}
+
+export function copyClaudeConfig(sourceDir, destDir) {
+  return copyAgentConfig(sourceDir, destDir, '.claude');
+}
+
+export function copyCodexConfig(sourceDir, destDir) {
+  return copyAgentConfig(sourceDir, destDir, '.codex');
 }
 
 /**
@@ -40,8 +48,16 @@ function copyDirRecursive(src, dest) {
 }
 
 /**
- * Check if .claude directory exists in a directory
+ * Check if a config directory exists in a directory
  */
+export function hasAgentConfig(dir, folderName) {
+  return fs.existsSync(path.join(dir, folderName));
+}
+
 export function hasClaudeConfig(dir) {
-  return fs.existsSync(path.join(dir, '.claude'));
+  return hasAgentConfig(dir, '.claude');
+}
+
+export function hasCodexConfig(dir) {
+  return hasAgentConfig(dir, '.codex');
 }

@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
-import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
+import { getCommandContext } from '../utils/command-context.js';
+import { commandText } from '../utils/messages.js';
 import {
   getFeatureWorktrees,
   getCurrentBranch,
@@ -14,16 +15,11 @@ import {
 } from '../utils/git.js';
 
 export async function reviewCommand(features, options) {
-  const gitRoot = findGitRoot();
-
-  if (!gitRoot) {
-    console.error(chalk.red('Error: Not in a git repository'));
-    process.exit(1);
-  }
-
   let config;
+  let gitRoot;
+  let featuresDir;
   try {
-    config = loadConfig();
+    ({ gitRoot, config, featuresDir } = getCommandContext());
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
@@ -34,7 +30,6 @@ export async function reviewCommand(features, options) {
     return returnToMain(gitRoot, config);
   }
 
-  const featuresDir = getFeaturesDir(config);
   const featureWorktrees = getFeatureWorktrees(featuresDir, gitRoot);
 
   if (featureWorktrees.length === 0) {
@@ -114,8 +109,8 @@ export async function reviewCommand(features, options) {
   }
 
   console.log(chalk.cyan('Review the changes in your editor, then run:'));
-  console.log(chalk.dim('  cpw review --back    # Return to main branch'));
-  console.log(chalk.dim('  cpw merge <feature>  # Merge a feature to main'));
+  console.log(chalk.dim(`  ${commandText('review --back')}    # Return to main branch`));
+  console.log(chalk.dim(`  ${commandText('merge <feature>')}  # Merge a feature to main`));
 }
 
 async function returnToMain(gitRoot, config) {

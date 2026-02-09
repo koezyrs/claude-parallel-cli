@@ -2,27 +2,21 @@ import chalk from 'chalk';
 import ora from 'ora';
 import fs from 'fs';
 import path from 'path';
-import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
-import { createWorktree, branchExists } from '../utils/git.js';
-import { copyClaudeConfig } from '../utils/claude.js';
+import { getCommandContext } from '../utils/command-context.js';
+import { commandText } from '../utils/messages.js';
+import { createWorktree, branchExists, ensureLongPathsEnabled } from '../utils/git.js';
+import { copyClaudeConfig, copyCodexConfig } from '../utils/claude.js';
 
 export async function createCommand(features) {
-  const gitRoot = findGitRoot();
-
-  if (!gitRoot) {
-    console.error(chalk.red('Error: Not in a git repository'));
-    process.exit(1);
-  }
-
+  let gitRoot;
   let config;
+  let featuresDir;
   try {
-    config = loadConfig();
+    ({ gitRoot, config, featuresDir } = getCommandContext());
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
   }
-
-  const featuresDir = getFeaturesDir(config);
 
   // Ensure features directory exists
   if (!fs.existsSync(featuresDir)) {
@@ -51,22 +45,50 @@ export async function createCommand(features) {
         continue;
       }
 
+      // On Windows, ensure git can handle long paths in this repository.
+      if (process.platform === 'win32') {
+        const longPathStatus = ensureLongPathsEnabled(gitRoot);
+        if (longPathStatus.status === 'failed') {
+          spinner.text = `Creating worktree for ${chalk.cyan(feature)} (warning: ${longPathStatus.message})`;
+        }
+      }
+
       // Create worktree
       createWorktree(worktreePath, feature, config.mainBranch, gitRoot);
 
-      // Copy .claude config if enabled (from config directory)
-      if (config.copyClaudeConfig && config._configDir) {
-        const copied = copyClaudeConfig(config._configDir, worktreePath);
-        if (copied) {
-          spinner.text = `Creating worktree for ${chalk.cyan(feature)} (copied .claude config)`;
+      // Copy assistant config folders if enabled (from config directory)
+      if (config._configDir) {
+        const copiedConfigs = [];
+        if (config.copyConfig.claude && copyClaudeConfig(config._configDir, worktreePath)) {
+          copiedConfigs.push('.claude');
+        }
+        if (config.copyConfig.codex && copyCodexConfig(config._configDir, worktreePath)) {
+          copiedConfigs.push('.codex');
+        }
+
+        if (copiedConfigs.length > 0) {
+          spinner.text = `Creating worktree for ${chalk.cyan(feature)} (copied ${copiedConfigs.join(', ')})`;
         }
       }
 
       spinner.succeed(`Created worktree: ${chalk.cyan(feature)} at ${chalk.dim(worktreePath)}`);
       results.push({ feature, success: true, path: worktreePath });
     } catch (error) {
-      spinner.fail(`Failed to create worktree for ${feature}: ${error.message}`);
-      results.push({ feature, success: false, error: error.message });
+      const errorMessage = error.message || String(error);
+      const normalizedError = errorMessage.toLowerCase();
+      const isWindowsLongPathError =
+        process.platform === 'win32' &&
+        (normalizedError.includes('filename too long') ||
+          normalizedError.includes('unable to create file'));
+      const failureMessage = isWindowsLongPathError
+        ? `${errorMessage}\n` +
+          'Windows long-path limits are likely blocking checkout. ' +
+          'cpc attempted to set `core.longpaths=true` for this repository. ' +
+          'If this still fails, enable Win32 long paths in Windows policy/registry and/or shorten `featuresDir` in .cpc.json.'
+        : errorMessage;
+
+      spinner.fail(`Failed to create worktree for ${feature}: ${failureMessage}`);
+      results.push({ feature, success: false, error: failureMessage });
     }
   }
 
@@ -78,8 +100,8 @@ export async function createCommand(features) {
   if (successful.length > 0) {
     console.log(chalk.green(`Successfully created ${successful.length} worktree(s)`));
     console.log(chalk.cyan('\nNext steps:'));
-    console.log(chalk.dim('  cpw start           # Open Claude in all worktrees'));
-    console.log(chalk.dim('  cpw start <feature> # Open Claude in specific worktree'));
+    console.log(chalk.dim(`  ${commandText('start')}           # Open your configured assistant in all worktrees`));
+    console.log(chalk.dim(`  ${commandText('start <feature>')} # Open your configured assistant in specific worktree`));
   }
 
   if (failed.length > 0) {

@@ -110,9 +110,41 @@ export function createWorktree(worktreePath, branchName, baseBranch, cwd = null)
   gitExec(`fetch origin ${baseBranch}`, { cwd, throwOnError: false });
 
   // Create worktree with new branch
-  gitExec(`worktree add "${worktreePath}" -b ${branchName} ${baseBranch}`, { cwd });
+  gitExec(`worktree add -b ${branchName} "${worktreePath}" ${baseBranch}`, { cwd });
 
   return worktreePath;
+}
+
+/**
+ * Ensure long path support is enabled in the repository on Windows
+ */
+export function ensureLongPathsEnabled(cwd = null) {
+  if (process.platform !== 'win32') {
+    return { status: 'not_windows' };
+  }
+
+  const currentValue = gitExec('config --get core.longpaths', { cwd, throwOnError: false });
+  if (currentValue && currentValue.trim().toLowerCase() === 'true') {
+    return { status: 'already_enabled' };
+  }
+
+  const setResult = gitExec('config core.longpaths true', { cwd, throwOnError: false });
+  if (setResult === null) {
+    return {
+      status: 'failed',
+      message: 'Unable to set git config core.longpaths=true for this repository.'
+    };
+  }
+
+  const verifyValue = gitExec('config --get core.longpaths', { cwd, throwOnError: false });
+  if (verifyValue && verifyValue.trim().toLowerCase() === 'true') {
+    return { status: 'enabled' };
+  }
+
+  return {
+    status: 'failed',
+    message: 'core.longpaths could not be verified after setting it.'
+  };
 }
 
 /**

@@ -1,9 +1,14 @@
-export const CONFIG_FILENAME = '.cpw.json';
+export const CLI_COMMAND = 'cpc';
+export const CONFIG_FILENAME = '.cpc.json';
 
 export const DEFAULT_CONFIG = {
-  featuresDir: '../project-features',
+  featuresDir: '../dev-worktrees',
   mainBranch: 'main',
-  copyClaudeConfig: true,
+  agent: 'claude',
+  copyConfig: {
+    claude: true,
+    codex: true
+  },
   terminal: 'auto'
 };
 

@@ -2,6 +2,37 @@ import fs from 'fs';
 import path from 'path';
 import { CONFIG_FILENAME, DEFAULT_CONFIG } from '../constants.js';
 
+function normalizeConfig(config = {}) {
+  return {
+    ...DEFAULT_CONFIG,
+    ...config,
+    copyConfig: {
+      ...DEFAULT_CONFIG.copyConfig,
+      ...(config.copyConfig || {})
+    }
+  };
+}
+
+function validateConfigSchema(config) {
+  if (Object.prototype.hasOwnProperty.call(config, 'copyClaudeConfig')) {
+    throw new Error(
+      'Unsupported config key "copyClaudeConfig". Re-run `cpc init` to migrate to the new `copyConfig` schema.'
+    );
+  }
+
+  if (!config.copyConfig || typeof config.copyConfig !== 'object') {
+    throw new Error(
+      'Missing or invalid "copyConfig" in .cpc.json. Re-run `cpc init` to regenerate config.'
+    );
+  }
+
+  if (typeof config.agent !== 'string' || !['claude', 'codex'].includes(config.agent)) {
+    throw new Error(
+      'Invalid "agent" in .cpc.json. Supported values are "claude" or "codex".'
+    );
+  }
+}
+
 /**
  * Get the current working directory
  */
@@ -43,7 +74,7 @@ export function findConfigDir(startDir = process.cwd()) {
 export function getConfigPath(configDir = null) {
   const dir = configDir || findConfigDir();
   if (!dir) {
-    throw new Error(`Config file not found. Run 'cpw init' first.`);
+    throw new Error(`Config file not found. Run 'cpc init' first.`);
   }
   return path.join(dir, CONFIG_FILENAME);
 }
@@ -62,17 +93,17 @@ export function loadConfig(startDir = process.cwd()) {
   const configDir = findConfigDir(startDir);
 
   if (!configDir) {
-    throw new Error(`Config file not found. Run 'cpw init' first.`);
+    throw new Error(`Config file not found. Run 'cpc init' first.`);
   }
 
   const configPath = path.join(configDir, CONFIG_FILENAME);
   const content = fs.readFileSync(configPath, 'utf-8');
   const config = JSON.parse(content);
+  validateConfigSchema(config);
 
   // Return config with the directory it was found in
   return {
-    ...DEFAULT_CONFIG,
-    ...config,
+    ...normalizeConfig(config),
     _configDir: configDir  // Internal: where the config was found
   };
 }
@@ -85,7 +116,7 @@ export function saveConfig(config, targetDir = process.cwd()) {
 
   // Remove internal properties before saving
   const { _configDir, ...configToSave } = config;
-  const mergedConfig = { ...DEFAULT_CONFIG, ...configToSave };
+  const mergedConfig = normalizeConfig(configToSave);
 
   fs.writeFileSync(configPath, JSON.stringify(mergedConfig, null, 2) + '\n');
 

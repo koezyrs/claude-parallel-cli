@@ -1,22 +1,22 @@
-# Claude Parallel CLI (cpw)
+# Code Parallel CLI (`cpc`)
 
-A CLI tool to automate parallel Claude Code workflows using git worktrees. Run multiple Claude agents simultaneously on different features in isolated environments.
+A CLI tool to automate parallel AI coding assistant workflows using git worktrees. Run multiple assistants (Claude or Codex) simultaneously on different features in isolated environments.
 
 ## Why?
 
-When working with Claude Code on larger projects, you often want to work on multiple features in parallel. Git worktrees allow you to have multiple working directories from the same repository, each on a different branch. This tool automates the workflow of creating, managing, and merging these parallel workstreams.
+When working with AI coding assistants on larger projects, you often want to work on multiple features in parallel. Git worktrees allow you to have multiple working directories from the same repository, each on a different branch. This tool automates the workflow of creating, managing, and merging these parallel workstreams.
 
 ## Installation
 
 ```bash
-npm install -g claude-parallel-cli
+npm install -g code-parallel-cli
 ```
 
 Or clone and link locally:
 
 ```bash
-git clone https://github.com/koezyrs/claude-parallel-cli.git
-cd claude-parallel-cli
+git clone https://github.com/koezyrs/code-parallel-cli.git
+cd code-parallel-cli
 npm install
 npm link
 ```
@@ -26,91 +26,105 @@ npm link
 ```bash
 # Initialize in your project
 cd your-project
-cpw init
+cpc init
 
 # Create worktrees for features
-cpw create auth-system new-dashboard api-refactor
+cpc create auth-system new-dashboard api-refactor
 
-# Start Claude in all worktrees (opens terminal tabs)
-cpw start
+# Start your configured assistant in all worktrees (opens terminal tabs)
+cpc start
 
 # Check status of all features
-cpw status
+cpc status
 
 # Review a feature before merging
-cpw review auth-system
+cpc review auth-system
 
 # Merge completed feature
-cpw merge auth-system
+cpc merge auth-system
 
 # Cleanup
-cpw cleanup auth-system
+cpc cleanup auth-system
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `cpw init` | Initialize config file in current project |
-| `cpw create <feature...>` | Create worktrees for one or more features |
-| `cpw list` | List all active worktrees |
-| `cpw start [feature...]` | Open terminal(s) with Claude in worktree(s) |
-| `cpw review [feature...]` | Checkout temp branch to review feature before merge |
-| `cpw review --back` | Return to main branch after reviewing |
-| `cpw merge <feature>` | Merge a feature branch back to main |
-| `cpw cleanup [feature...]` | Remove worktrees and optionally delete branches |
-| `cpw cleanup --all` | Remove all feature worktrees |
-| `cpw status` | Show status of all feature worktrees |
+| `cpc init` | Initialize config file in current project |
+| `cpc create <feature...>` | Create worktrees for one or more features |
+| `cpc list` | List all active worktrees |
+| `cpc start [feature...]` | Open terminal(s) with your configured assistant in worktree(s) |
+| `cpc review [feature...]` | Checkout temp branch to review feature before merge |
+| `cpc review --back` | Return to main branch after reviewing |
+| `cpc merge <feature>` | Merge a feature branch back to main |
+| `cpc cleanup [feature...]` | Remove worktrees and optionally delete branches |
+| `cpc cleanup --all` | Remove all feature worktrees |
+| `cpc status` | Show status of all feature worktrees |
 
 ## Configuration
 
-Running `cpw init` creates a `.cpw.json` file in your project root:
+Running `cpc init` creates a `.cpc.json` file in your project root:
 
 ```json
 {
-  "featuresDir": "../project-features",
+  "featuresDir": "../dev-worktrees",
   "mainBranch": "main",
-  "copyClaudeConfig": true,
+  "agent": "claude",
+  "copyConfig": {
+    "claude": true,
+    "codex": true
+  },
   "terminal": "auto"
 }
 ```
 
+`copyClaudeConfig` is no longer supported. Re-run `cpc init` to migrate older configs.
+
 | Option | Description | Default |
 |--------|-------------|---------|
-| `featuresDir` | Directory where worktrees are created (relative to project) | `../project-features` |
+| `featuresDir` | Directory where worktrees are created (relative to project) | `../dev-worktrees` |
 | `mainBranch` | Branch to create features from | `main` |
-| `copyClaudeConfig` | Copy `.claude/` folder to new worktrees | `true` |
+| `agent` | Assistant command to start: `claude` or `codex` | `claude` |
+| `copyConfig.claude` | Copy `.claude/` folder to new worktrees | `true` |
+| `copyConfig.codex` | Copy `.codex/` folder to new worktrees | `true` |
 | `terminal` | Terminal to use: `auto`, `wt`, `cmd`, `tabby`, `powershell` | `auto` |
+
+### Windows long-path troubleshooting
+
+When running `cpc create` on Windows, `cpc` automatically runs `git config core.longpaths true` in the current repository before creating worktrees.
+
+If you still get errors like `Filename too long`, Windows OS policy may still block long paths. Enable **Win32 long paths** in Windows, and/or use a shorter `featuresDir` value in `.cpc.json` (for example `../wt`).
 
 ## Workflow Example
 
 ```bash
 # 1. Start a new project session
 cd my-project
-cpw init
+cpc init
 
 # 2. Create worktrees for three parallel features
-cpw create user-auth payment-system admin-dashboard
+cpc create user-auth payment-system admin-dashboard
 
-# 3. Open Claude in all three (opens 3 terminal tabs)
-cpw start
+# 3. Open your configured assistant in all three (opens 3 terminal tabs)
+cpc start
 
-# 4. Work with Claude in each terminal on different features...
+# 4. Work with the assistant in each terminal on different features...
 
 # 5. Check progress
-cpw status
+cpc status
 
 # 6. Review the auth feature in your main editor
-cpw review user-auth
+cpc review user-auth
 # Browse the code, then return to main
-cpw review --back
+cpc review --back
 
 # 7. Merge completed features
-cpw merge user-auth
-cpw merge payment-system
+cpc merge user-auth
+cpc merge payment-system
 
 # 8. Cleanup
-cpw cleanup --all -d
+cpc cleanup --all -d
 ```
 
 ## Platform Support
@@ -123,7 +137,7 @@ cpw cleanup --all -d
 
 - Node.js >= 18
 - Git
-- Claude Code CLI (`claude`)
+- Claude Code CLI (`claude`) or Codex CLI (`codex`) based on your `agent` setting
 
 ## License
 

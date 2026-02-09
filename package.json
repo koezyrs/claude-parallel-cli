@@ -1,18 +1,18 @@
 {
-  "name": "claude-parallel-cli",
+  "name": "code-parallel-cli",
   "version": "1.0.0",
-  "description": "CLI tool to automate parallel Claude Code workflows using git worktrees",
+  "description": "CLI tool to automate parallel AI coding assistant workflows using git worktrees",
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "cpw": "./bin/cpw.js",
-    "claude-parallel": "./bin/cpw.js"
+    "cpc": "./bin/cpc.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "claude",
+    "codex",
     "cli",
     "git",
     "worktree",

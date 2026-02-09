@@ -1,0 +1,7 @@
+- Install deps: `npm install`
+- Link CLI locally: `npm link`
+- Verify CLI wiring: `cpw --help`
+- Initialize config in repo: `cpw init`
+- Manual flow checks: `cpw create feature-a`, `cpw list`, `cpw status`
+- Placeholder tests: `npm test` (currently exits with error; no automated suite yet)
+- Useful Windows shell commands: `Get-ChildItem`, `Get-ChildItem -Recurse`, `Select-String`, `git status`, `git diff`

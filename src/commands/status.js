@@ -1,5 +1,6 @@
 import chalk from 'chalk';
-import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
+import { getCommandContext } from '../utils/command-context.js';
+import { commandText } from '../utils/messages.js';
 import {
   getFeatureWorktrees,
   getCommitCount,
@@ -9,22 +10,16 @@ import {
 } from '../utils/git.js';
 
 export async function statusCommand() {
-  const gitRoot = findGitRoot();
-
-  if (!gitRoot) {
-    console.error(chalk.red('Error: Not in a git repository'));
-    process.exit(1);
-  }
-
   let config;
+  let gitRoot;
+  let featuresDir;
   try {
-    config = loadConfig();
+    ({ gitRoot, config, featuresDir } = getCommandContext());
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
   }
 
-  // Show main worktree status
   const mainBranch = getCurrentBranch(gitRoot);
   const mainHasChanges = hasUncommittedChanges(gitRoot);
 
@@ -33,12 +28,11 @@ export async function statusCommand() {
   console.log(`  Status: ${mainHasChanges ? chalk.yellow('uncommitted changes') : chalk.green('clean')}`);
   console.log('');
 
-  const featuresDir = getFeaturesDir(config);
   const featureWorktrees = getFeatureWorktrees(featuresDir, gitRoot);
 
   if (featureWorktrees.length === 0) {
     console.log(chalk.yellow('No feature worktrees found.'));
-    console.log(chalk.dim('\nCreate one with: cpw create <feature-name>'));
+    console.log(chalk.dim(`\nCreate one with: ${commandText('create <feature-name>')}`));
     return;
   }
 
@@ -48,7 +42,6 @@ export async function statusCommand() {
     const branchName = wt.branch || '(detached)';
     const wtHasChanges = hasUncommittedChanges(wt.path);
 
-    // Get comparison with main
     let commitCount = 0;
     let changedFiles = [];
 
@@ -57,18 +50,17 @@ export async function statusCommand() {
       changedFiles = getChangedFiles(config.mainBranch, wt.branch, gitRoot);
     }
 
-    // Status indicator
     let statusIcon;
     let statusText;
 
     if (wtHasChanges) {
-      statusIcon = chalk.yellow('●');
+      statusIcon = chalk.yellow('*');
       statusText = chalk.yellow('uncommitted changes');
     } else if (commitCount > 0) {
-      statusIcon = chalk.blue('●');
+      statusIcon = chalk.blue('*');
       statusText = chalk.blue(`${commitCount} commit(s) ahead`);
     } else {
-      statusIcon = chalk.green('●');
+      statusIcon = chalk.green('*');
       statusText = chalk.green('up to date');
     }
 
@@ -83,10 +75,8 @@ export async function statusCommand() {
     console.log('');
   }
 
-  // Summary
   console.log(chalk.dim(`Total: ${featureWorktrees.length} feature worktree(s)`));
 
-  // Show helpful commands
   const worktreesWithChanges = featureWorktrees.filter(wt => {
     const commitCount = wt.branch ? getCommitCount(config.mainBranch, wt.branch, gitRoot) : 0;
     return commitCount > 0;
@@ -95,8 +85,8 @@ export async function statusCommand() {
   if (worktreesWithChanges.length > 0) {
     console.log(chalk.cyan('\nReady to review/merge:'));
     worktreesWithChanges.forEach(wt => {
-      console.log(chalk.dim(`  cpw review ${wt.branch}`));
-      console.log(chalk.dim(`  cpw merge ${wt.branch}`));
+      console.log(chalk.dim(`  ${commandText(`review ${wt.branch}`)}`));
+      console.log(chalk.dim(`  ${commandText(`merge ${wt.branch}`)}`));
     });
   }
 }

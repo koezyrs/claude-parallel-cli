@@ -112,7 +112,8 @@ function openWindowsTerminal(workingDir, command, preference) {
   }
 
   // CMD fallback
-  const title = `Claude - ${workingDir.split(/[\\/]/).pop()}`;
+  const assistantName = command ? `${command.charAt(0).toUpperCase()}${command.slice(1)}` : 'Assistant';
+  const title = `${assistantName} - ${workingDir.split(/[\\/]/).pop()}`;
   exec(`start "${title}" cmd /D "${workingDir}" /k "${command}"`);
   return { type: "cmd", success: true };
 }

@@ -1,0 +1,5 @@
+- Project: claude-parallel-cli (`cpw`), a Node.js CLI for managing parallel feature worktrees and Claude workflows.
+- Entry point: `bin/cpw.js` using Commander.
+- Commands: `init`, `create`, `start`, `review`, `merge`, `cleanup`, `status`, `list` in `src/commands/`.
+- Shared utilities in `src/utils/`; shared constants in `src/constants.js`.
+- Tech stack: Node.js, ES modules (`import`/`export`), JavaScript files (`.js`).

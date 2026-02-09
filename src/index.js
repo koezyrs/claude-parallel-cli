@@ -10,6 +10,8 @@ export { statusCommand } from './commands/status.js';
 
 // Utilities
 export * from './utils/config.js';
+export * from './utils/command-context.js';
+export * from './utils/messages.js';
 export * from './utils/git.js';
 export * from './utils/terminal.js';
 export * from './utils/claude.js';

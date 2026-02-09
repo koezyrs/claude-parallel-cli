@@ -1,31 +1,27 @@
 import chalk from 'chalk';
 import ora from 'ora';
-import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
+import { getCommandContext } from '../utils/command-context.js';
+import { commandText } from '../utils/messages.js';
 import { getFeatureWorktrees } from '../utils/git.js';
 import { openTerminal } from '../utils/terminal.js';
 
 export async function startCommand(features) {
-  const gitRoot = findGitRoot();
-
-  if (!gitRoot) {
-    console.error(chalk.red('Error: Not in a git repository'));
-    process.exit(1);
-  }
-
   let config;
+  let gitRoot;
+  let featuresDir;
   try {
-    config = loadConfig();
+    ({ gitRoot, config, featuresDir } = getCommandContext());
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
   }
-
-  const featuresDir = getFeaturesDir(config);
   const featureWorktrees = getFeatureWorktrees(featuresDir, gitRoot);
+  const assistant = config.agent === 'codex' ? 'codex' : 'claude';
+  const assistantLabel = assistant === 'codex' ? 'Codex' : 'Claude';
 
   if (featureWorktrees.length === 0) {
     console.log(chalk.yellow('No feature worktrees found.'));
-    console.log(chalk.dim('\nCreate one with: cpw create <feature-name>'));
+    console.log(chalk.dim(`\nCreate one with: ${commandText('create <feature-name>')}`));
     return;
   }
 
@@ -46,7 +42,7 @@ export async function startCommand(features) {
     }
   }
 
-  console.log(chalk.bold(`Starting Claude in ${worktreesToStart.length} worktree(s)...\n`));
+  console.log(chalk.bold(`Starting ${assistantLabel} in ${worktreesToStart.length} worktree(s)...\n`));
 
   const results = [];
 
@@ -54,7 +50,7 @@ export async function startCommand(features) {
     const spinner = ora(`Opening terminal for ${chalk.cyan(wt.branch)}`).start();
 
     try {
-      const result = openTerminal(wt.path, 'claude', { terminal: config.terminal });
+      const result = openTerminal(wt.path, assistant, { terminal: config.terminal });
       spinner.succeed(`Opened ${result.type} for ${chalk.cyan(wt.branch)}`);
       results.push({ ...wt, success: true, terminal: result.type });
     } catch (error) {
@@ -69,7 +65,7 @@ export async function startCommand(features) {
 
   console.log('');
   if (successful.length > 0) {
-    console.log(chalk.green(`Opened ${successful.length} terminal(s) with Claude`));
+    console.log(chalk.green(`Opened ${successful.length} terminal(s) with ${assistantLabel}`));
   }
 
   if (failed.length > 0) {

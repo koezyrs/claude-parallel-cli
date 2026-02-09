@@ -1,7 +1,8 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
-import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
+import { getCommandContext } from '../utils/command-context.js';
+import { commandText } from '../utils/messages.js';
 import {
   getCurrentBranch,
   checkout,
@@ -12,16 +13,11 @@ import {
 } from '../utils/git.js';
 
 export async function mergeCommand(feature) {
-  const gitRoot = findGitRoot();
-
-  if (!gitRoot) {
-    console.error(chalk.red('Error: Not in a git repository'));
-    process.exit(1);
-  }
-
   let config;
+  let gitRoot;
+  let featuresDir;
   try {
-    config = loadConfig();
+    ({ gitRoot, config, featuresDir } = getCommandContext());
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
@@ -40,7 +36,6 @@ export async function mergeCommand(feature) {
   }
 
   // Check for uncommitted changes in feature worktree
-  const featuresDir = getFeaturesDir(config);
   const featureWorktrees = getFeatureWorktrees(featuresDir, gitRoot);
   const featureWorktree = featureWorktrees.find(wt => wt.branch === feature);
 
@@ -89,7 +84,7 @@ export async function mergeCommand(feature) {
     ]);
 
     if (cleanup) {
-      console.log(chalk.dim(`\nRun: cpw cleanup ${feature} -d`));
+      console.log(chalk.dim(`\nRun: ${commandText(`cleanup ${feature} -d`)}`));
     }
   }
 }

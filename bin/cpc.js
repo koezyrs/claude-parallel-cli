@@ -11,8 +11,8 @@ import { cleanupCommand } from '../src/commands/cleanup.js';
 import { statusCommand } from '../src/commands/status.js';
 
 program
-  .name('cpw')
-  .description('CLI tool to automate parallel Claude Code workflows using git worktrees')
+  .name('cpc')
+  .description('CLI tool to automate parallel AI coding assistant workflows using git worktrees')
   .version('1.0.0');
 
 program
@@ -32,7 +32,7 @@ program
 
 program
   .command('start [features...]')
-  .description('Open terminal(s) with Claude in worktree(s)')
+  .description('Open terminal(s) with your configured assistant in worktree(s)')
   .action(startCommand);
 
 program

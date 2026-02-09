@@ -2,7 +2,8 @@ import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
 import fs from 'fs';
-import { loadConfig, getFeaturesDir, findGitRoot } from '../utils/config.js';
+import { getCommandContext } from '../utils/command-context.js';
+import { commandText } from '../utils/messages.js';
 import {
   getFeatureWorktrees,
   removeWorktree,
@@ -12,22 +13,15 @@ import {
 } from '../utils/git.js';
 
 export async function cleanupCommand(features, options) {
-  const gitRoot = findGitRoot();
-
-  if (!gitRoot) {
-    console.error(chalk.red('Error: Not in a git repository'));
-    process.exit(1);
-  }
-
   let config;
+  let gitRoot;
+  let featuresDir;
   try {
-    config = loadConfig();
+    ({ gitRoot, config, featuresDir } = getCommandContext());
   } catch (error) {
     console.error(chalk.red(error.message));
     process.exit(1);
   }
-
-  const featuresDir = getFeaturesDir(config);
   const featureWorktrees = getFeatureWorktrees(featuresDir, gitRoot);
 
   if (featureWorktrees.length === 0) {
@@ -71,8 +65,8 @@ export async function cleanupCommand(features, options) {
   } else {
     console.error(chalk.red('Please specify features to clean up or use --all flag.'));
     console.log(chalk.dim('\nUsage:'));
-    console.log(chalk.dim('  cpw cleanup <feature>  # Remove specific worktree'));
-    console.log(chalk.dim('  cpw cleanup --all      # Remove all worktrees'));
+    console.log(chalk.dim(`  ${commandText('cleanup <feature>')}  # Remove specific worktree`));
+    console.log(chalk.dim(`  ${commandText('cleanup --all')}      # Remove all worktrees`));
     return;
   }
 
